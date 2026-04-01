@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Highlight to Doc</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        width: 320px;
+        padding: 16px;
+        background: #f9fafb;
+        color: #1f2937;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      header h1 {
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .emoji {
+        font-size: 20px;
+      }
+
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: #6b7280;
+        margin-bottom: 4px;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 13px;
+        background: #fff;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      input[type="text"]:focus {
+        border-color: #4f46e5;
+      }
+
+      .doc-section {
+        margin-bottom: 14px;
+      }
+
+      .doc-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .doc-row input {
+        flex: 1;
+      }
+
+      #saveDocBtn {
+        padding: 8px 12px;
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      #saveDocBtn:hover {
+        background: #4338ca;
+      }
+
+      .preview-box {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 10px;
+        min-height: 60px;
+        font-size: 13px;
+        color: #374151;
+        margin-bottom: 14px;
+        line-height: 1.5;
+        max-height: 120px;
+        overflow-y: auto;
+        word-break: break-word;
+      }
+
+      .preview-box.empty {
+        color: #9ca3af;
+        font-style: italic;
+      }
+
+      #mainBtn {
+        width: 100%;
+        padding: 10px;
+        background: #10b981;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      #mainBtn:hover:not(:disabled) {
+        background: #059669;
+      }
+
+      #mainBtn:disabled {
+        background: #d1d5db;
+        cursor: not-allowed;
+      }
+
+      #status {
+        margin-top: 10px;
+        font-size: 12px;
+        text-align: center;
+        min-height: 18px;
+        color: #6b7280;
+      }
+
+      #status.success {
+        color: #10b981;
+      }
+
+      #status.error {
+        color: #ef4444;
+      }
+
+      .divider {
+        border: none;
+        border-top: 1px solid #e5e7eb;
+        margin: 12px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="emoji">📝</span>
+      <h1>Highlight to Doc</h1>
+    </header>
+
+    <!-- Google Doc ID Config -->
+    <div class="doc-section">
+      <label for="docIdInput">Google Doc ID</label>
+      <div class="doc-row">
+        <input
+          type="text"
+          id="docIdInput"
+          placeholder="Paste your Doc ID here…"
+        />
+        <button id="saveDocBtn">Save</button>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Highlighted text preview -->
+    <label>Selected Text</label>
+    <div id="preview" class="preview-box empty">
+      Highlight text on the page, then open this popup…
+    </div>
+
+    <button id="mainBtn" disabled>Save to Google Doc</button>
+    <div id="status"></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Node (if you add build tools later)
+node_modules/
+dist/
+
+# Secrets — never commit these
+*.env
+secrets.json
