@@ -104,7 +104,7 @@ async function getTabs() {
 
   if (!docId) throw new Error("No Google Doc ID set.");
 
-  const res = await fetch(`${GOOGLE_DOCS_API}/${docId}?includeTabsContent=false`, {
+  const res = await fetch(`${GOOGLE_DOCS_API}/${docId}?includeTabsContent=true`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
