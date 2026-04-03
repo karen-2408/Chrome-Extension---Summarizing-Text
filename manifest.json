@@ -18,7 +18,7 @@
   ],
 
   "oauth2": {
-    "client_id": "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
+    "client_id": "550287289594-m226vktduf31b528u4neiv0aqi219hu1.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/documents"
     ]
