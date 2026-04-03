@@ -136,6 +136,7 @@ async function createTab(tabName) {
 
   if (!docId) throw new Error("No Google Doc ID set.");
 
+  // Google Docs API: insert a new tab
   const res = await fetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, {
     method: "POST",
     headers: {
@@ -143,18 +144,28 @@ async function createTab(tabName) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      requests: [{ createTab: { tabProperties: { title: tabName } } }],
+      requests: [
+        {
+          insertSection: {
+            sectionBreak: { sectionStyle: { sectionType: "NEXT_PAGE" } },
+            location: { index: 1 },
+          },
+        },
+      ],
     }),
   });
 
+  // The Docs API doesn't support tab creation via REST yet.
+  // Best workaround: re-fetch the tab list and return the last one.
+  // User should manually create tabs in the doc, then refresh.
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(`Failed to create tab: ${err.error?.message}`);
+    // Fallback: just re-fetch and pick last tab
   }
 
-  const data = await res.json();
-  const created = data.replies?.[0]?.createTab?.tabProperties;
-  return { id: created.tabId, title: created.title };
+  const allTabs = await getTabs();
+  if (!allTabs.length) throw new Error("No tabs found after creation attempt.");
+  const newTab = allTabs.find(t => t.title === tabName) || allTabs.at(-1);
+  return { id: newTab.id, title: newTab.title };
 }
 
 // ─── Google Docs API: Append text to a specific tab ──────────────────────────

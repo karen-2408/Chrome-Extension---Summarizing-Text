@@ -78,29 +78,15 @@ refreshTabsBtn.addEventListener("click", loadTabs);
 // ─── Create New Tab ───────────────────────────────────────────────────────────
 
 createTabBtn.addEventListener("click", () => {
+  // Google Docs REST API doesn't support tab creation yet.
+  // Guide the user to create the tab manually, then refresh.
   const name = newTabInput.value.trim();
   if (!name) return setStatus("Enter a tab name first.", "error");
-
-  createTabBtn.disabled = true;
-  setStatus("Creating tab…", "");
-
-  chrome.runtime.sendMessage({ type: "CREATE_TAB", tabName: name }, (response) => {
-    createTabBtn.disabled = false;
-    if (!response?.success) {
-      setStatus(`❌ ${response?.error || "Failed to create tab"}`, "error");
-      return;
-    }
-
-    // Add new tab to dropdown and select it
-    const opt = document.createElement("option");
-    opt.value = response.tab.id;
-    opt.textContent = response.tab.title;
-    tabSelect.appendChild(opt);
-    tabSelect.value = response.tab.id;
-
-    newTabInput.value = "";
-    setStatus(`✅ Tab "${response.tab.title}" created!`, "success");
-  });
+  setStatus(
+    `Create a tab named "${name}" in your Google Doc, then click ↻ to refresh.`,
+    ""
+  );
+  newTabInput.value = "";
 });
 
 // ─── Save Highlight ───────────────────────────────────────────────────────────
