@@ -115,6 +115,11 @@ async function getTabs() {
 
   const doc = await res.json();
 
+  // Surface the raw tab keys so the popup can display them
+  if (!doc.tabs) {
+    throw new Error("No 'tabs' key in response. Top-level keys: " + Object.keys(doc).join(", "));
+  }
+
   // Flatten all tabs (including nested child tabs)
   const flattenTabs = (tabs) => {
     const result = [];
@@ -125,7 +130,11 @@ async function getTabs() {
     return result;
   };
 
-  return flattenTabs(doc.tabs);
+  const found = flattenTabs(doc.tabs);
+  if (!found.length) {
+    throw new Error("'tabs' exists but is empty. Raw: " + JSON.stringify(doc.tabs).slice(0, 200));
+  }
+  return found;
 }
 
 // ─── Google Docs API: Create a new tab ───────────────────────────────────────
