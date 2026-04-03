@@ -180,9 +180,8 @@ async function createTab(tabName) {
 // ─── Google Docs API: Append text to a specific tab ──────────────────────────
 
 async function appendToDoc(token, docId, text, tabId) {
-  // Build URL — include tabId if provided
-  const tabParam = tabId ? `&tabId=${tabId}` : "";
-  const docUrl = `${GOOGLE_DOCS_API}/${docId}?includeTabsContent=true${tabParam}`;
+  // Fetch doc with all tab content — no tabId in URL, it's not a valid query param
+  const docUrl = `${GOOGLE_DOCS_API}/${docId}?includeTabsContent=true`;
 
   const docRes = await fetch(docUrl, {
     headers: { Authorization: `Bearer ${token}` },
@@ -195,7 +194,7 @@ async function appendToDoc(token, docId, text, tabId) {
 
   const doc = await docRes.json();
 
-  // Find the right tab's body end index
+  // Find the right tab's end index
   const findTab = (tabs, id) => {
     for (const tab of tabs || []) {
       if (!id || tab.tabProperties.tabId === id) return tab;
@@ -208,9 +207,11 @@ async function appendToDoc(token, docId, text, tabId) {
   const targetTab = tabId ? findTab(doc.tabs, tabId) : doc.tabs?.[0];
   const endIndex = targetTab?.documentTab?.body?.content?.at(-1)?.endIndex ?? 1;
 
-  // batchUpdate with tabId scoping
-  const updateUrl = `${GOOGLE_DOCS_API}/${docId}:batchUpdate`;
-  const batchRes = await fetch(updateUrl, {
+  // Build insertText request — tabId goes inside location, not the URL
+  const insertLocation = { index: endIndex - 1 };
+  if (tabId) insertLocation.tabId = tabId;
+
+  const batchRes = await fetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -220,7 +221,7 @@ async function appendToDoc(token, docId, text, tabId) {
       requests: [
         {
           insertText: {
-            location: { index: endIndex - 1, tabId: tabId || undefined },
+            location: insertLocation,
             text,
           },
         },
