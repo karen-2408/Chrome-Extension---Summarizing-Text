@@ -1,5 +1,5 @@
 // background.js — Service Worker
-// Handles: OAuth token retrieval, context menu, Google Docs API calls
+// Handles: OAuth token retrieval, context menu, Google Docs API calls (with tab support)
 
 const GOOGLE_DOCS_API = "https://docs.googleapis.com/v1/documents";
 
@@ -17,7 +17,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "save-highlight" && info.selectionText) {
-    saveHighlight(info.selectionText.trim(), tab.url);
+    saveHighlight(info.selectionText.trim(), tab.url, null);
   }
 });
 
@@ -25,10 +25,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "SAVE_HIGHLIGHT") {
-    saveHighlight(message.text, message.url)
+    saveHighlight(message.text, message.url, message.tabId)
       .then(() => sendResponse({ success: true }))
       .catch((err) => sendResponse({ success: false, error: err.message }));
-    return true; // keep channel open for async response
+    return true;
   }
 
   if (message.type === "SET_DOC_ID") {
@@ -44,11 +44,25 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     );
     return true;
   }
+
+  if (message.type === "GET_TABS") {
+    getTabs()
+      .then((tabs) => sendResponse({ success: true, tabs }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === "CREATE_TAB") {
+    createTab(message.tabName)
+      .then((tab) => sendResponse({ success: true, tab }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
 });
 
-// ─── Core: Save Highlight to Google Doc ──────────────────────────────────────
+// ─── Core: Save Highlight to a specific Doc Tab ───────────────────────────────
 
-async function saveHighlight(text, sourceUrl) {
+async function saveHighlight(text, sourceUrl, tabId) {
   const token = await getAuthToken();
   const docId = await getStoredDocId();
 
@@ -59,7 +73,7 @@ async function saveHighlight(text, sourceUrl) {
   const timestamp = new Date().toLocaleString();
   const snippet = buildSnippet(text, sourceUrl, timestamp);
 
-  await appendToDoc(token, docId, snippet);
+  await appendToDoc(token, docId, snippet, tabId);
 }
 
 // ─── Build the text block to append ──────────────────────────────────────────
@@ -82,11 +96,75 @@ function getAuthToken() {
   });
 }
 
-// ─── Google Docs API: Append text ────────────────────────────────────────────
+// ─── Google Docs API: Get all tabs ───────────────────────────────────────────
 
-async function appendToDoc(token, docId, text) {
-  // 1. Get current doc end index
-  const docRes = await fetch(`${GOOGLE_DOCS_API}/${docId}`, {
+async function getTabs() {
+  const token = await getAuthToken();
+  const docId = await getStoredDocId();
+
+  if (!docId) throw new Error("No Google Doc ID set.");
+
+  const res = await fetch(`${GOOGLE_DOCS_API}/${docId}?includeTabsContent=false`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(`Failed to fetch doc: ${err.error?.message}`);
+  }
+
+  const doc = await res.json();
+
+  // Flatten all tabs (including nested child tabs)
+  const flattenTabs = (tabs) => {
+    const result = [];
+    for (const tab of tabs || []) {
+      result.push({ id: tab.tabProperties.tabId, title: tab.tabProperties.title });
+      if (tab.childTabs?.length) result.push(...flattenTabs(tab.childTabs));
+    }
+    return result;
+  };
+
+  return flattenTabs(doc.tabs);
+}
+
+// ─── Google Docs API: Create a new tab ───────────────────────────────────────
+
+async function createTab(tabName) {
+  const token = await getAuthToken();
+  const docId = await getStoredDocId();
+
+  if (!docId) throw new Error("No Google Doc ID set.");
+
+  const res = await fetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [{ createTab: { tabProperties: { title: tabName } } }],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(`Failed to create tab: ${err.error?.message}`);
+  }
+
+  const data = await res.json();
+  const created = data.replies?.[0]?.createTab?.tabProperties;
+  return { id: created.tabId, title: created.title };
+}
+
+// ─── Google Docs API: Append text to a specific tab ──────────────────────────
+
+async function appendToDoc(token, docId, text, tabId) {
+  // Build URL — include tabId if provided
+  const tabParam = tabId ? `&tabId=${tabId}` : "";
+  const docUrl = `${GOOGLE_DOCS_API}/${docId}?includeTabsContent=true${tabParam}`;
+
+  const docRes = await fetch(docUrl, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -96,10 +174,23 @@ async function appendToDoc(token, docId, text) {
   }
 
   const doc = await docRes.json();
-  const endIndex = doc.body.content.at(-1)?.endIndex ?? 1;
 
-  // 2. Insert text at the end
-  const batchRes = await fetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, {
+  // Find the right tab's body end index
+  const findTab = (tabs, id) => {
+    for (const tab of tabs || []) {
+      if (!id || tab.tabProperties.tabId === id) return tab;
+      const found = findTab(tab.childTabs, id);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const targetTab = tabId ? findTab(doc.tabs, tabId) : doc.tabs?.[0];
+  const endIndex = targetTab?.documentTab?.body?.content?.at(-1)?.endIndex ?? 1;
+
+  // batchUpdate with tabId scoping
+  const updateUrl = `${GOOGLE_DOCS_API}/${docId}:batchUpdate`;
+  const batchRes = await fetch(updateUrl, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -109,7 +200,7 @@ async function appendToDoc(token, docId, text) {
       requests: [
         {
           insertText: {
-            location: { index: endIndex - 1 },
+            location: { index: endIndex - 1, tabId: tabId || undefined },
             text,
           },
         },

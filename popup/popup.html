@@ -4,182 +4,351 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Highlight to Doc</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
     <style>
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+      :root {
+        --cream: #fdf6ec;
+        --warm-white: #fffaf4;
+        --ink: #2c2416;
+        --ink-light: #7a6a52;
+        --ink-faint: #c4b49a;
+        --amber: #e8a838;
+        --amber-dark: #c98c1a;
+        --amber-glow: rgba(232, 168, 56, 0.15);
+        --sage: #6a9e7f;
+        --sage-light: rgba(106, 158, 127, 0.12);
+        --rose: #d4706a;
+        --border: rgba(196, 180, 154, 0.4);
+        --shadow: 0 2px 12px rgba(44, 36, 22, 0.08);
       }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
 
       body {
-        font-family: "Segoe UI", system-ui, sans-serif;
-        width: 320px;
-        padding: 16px;
-        background: #f9fafb;
-        color: #1f2937;
+        font-family: 'DM Sans', sans-serif;
+        width: 300px;
+        background: var(--cream);
+        color: var(--ink);
+        /* notebook line texture */
+        background-image: repeating-linear-gradient(
+          transparent,
+          transparent 27px,
+          rgba(196, 180, 154, 0.18) 28px
+        );
       }
 
+      /* ── Paper card ── */
+      .card {
+        background: var(--warm-white);
+        margin: 12px;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: var(--shadow), 0 0 0 1px var(--border);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--amber), var(--sage), var(--rose));
+        border-radius: 16px 16px 0 0;
+      }
+
+      /* ── Header ── */
       header {
         display: flex;
         align-items: center;
-        gap: 8px;
-        margin-bottom: 16px;
+        gap: 10px;
+        padding: 14px 16px 10px;
       }
 
-      header h1 {
-        font-size: 15px;
+      .logo {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--amber), var(--amber-dark));
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        box-shadow: 0 2px 8px rgba(232, 168, 56, 0.35);
+        flex-shrink: 0;
+      }
+
+      .header-text h1 {
+        font-family: 'Fraunces', serif;
+        font-size: 16px;
         font-weight: 600;
+        color: var(--ink);
+        line-height: 1.1;
       }
 
-      .emoji {
-        font-size: 20px;
+      .header-text p {
+        font-size: 10px;
+        color: var(--ink-light);
+        margin-top: 1px;
+        letter-spacing: 0.03em;
       }
 
-      label {
-        display: block;
-        font-size: 12px;
+      /* ── Section label ── */
+      .field-label {
+        font-size: 10px;
         font-weight: 500;
-        color: #6b7280;
-        margin-bottom: 4px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        margin-bottom: 5px;
       }
 
+      /* ── Inputs ── */
       input[type="text"] {
-        width: 100%;
-        padding: 8px 10px;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        font-size: 13px;
-        background: #fff;
+        flex: 1;
+        padding: 8px 11px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        font-size: 12px;
+        font-family: 'DM Sans', sans-serif;
+        background: var(--cream);
+        color: var(--ink);
         outline: none;
-        transition: border-color 0.15s;
+        transition: border-color 0.2s, box-shadow 0.2s;
       }
 
       input[type="text"]:focus {
-        border-color: #4f46e5;
+        border-color: var(--amber);
+        box-shadow: 0 0 0 3px var(--amber-glow);
       }
 
-      .doc-section {
-        margin-bottom: 14px;
-      }
+      input[type="text"]::placeholder { color: var(--ink-faint); }
 
-      .doc-row {
-        display: flex;
-        gap: 8px;
-      }
-
-      .doc-row input {
+      select {
         flex: 1;
+        padding: 8px 11px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        font-size: 12px;
+        font-family: 'DM Sans', sans-serif;
+        background: var(--cream);
+        color: var(--ink);
+        outline: none;
+        cursor: pointer;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a6a52' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
       }
 
-      #saveDocBtn {
+      select:focus {
+        border-color: var(--amber);
+        box-shadow: 0 0 0 3px var(--amber-glow);
+      }
+
+      /* ── Row layout ── */
+      .row { display: flex; gap: 6px; align-items: stretch; }
+
+      /* ── Buttons ── */
+      .btn {
         padding: 8px 12px;
-        background: #4f46e5;
-        color: white;
         border: none;
-        border-radius: 8px;
-        font-size: 12px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 500;
         cursor: pointer;
+        transition: all 0.15s;
         white-space: nowrap;
       }
 
-      #saveDocBtn:hover {
-        background: #4338ca;
+      .btn-primary {
+        background: var(--ink);
+        color: var(--cream);
       }
+      .btn-primary:hover { background: #3d3120; transform: translateY(-1px); }
 
-      .preview-box {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 10px;
-        min-height: 60px;
-        font-size: 13px;
-        color: #374151;
-        margin-bottom: 14px;
-        line-height: 1.5;
-        max-height: 120px;
-        overflow-y: auto;
-        word-break: break-word;
+      .btn-ghost {
+        background: transparent;
+        color: var(--ink-light);
+        border: 1.5px solid var(--border);
+        font-size: 14px;
+        padding: 8px 10px;
       }
+      .btn-ghost:hover { background: var(--amber-glow); border-color: var(--amber); }
 
-      .preview-box.empty {
-        color: #9ca3af;
-        font-style: italic;
+      .btn-add {
+        background: var(--sage-light);
+        color: var(--sage);
+        border: 1.5px solid rgba(106, 158, 127, 0.3);
       }
+      .btn-add:hover { background: rgba(106, 158, 127, 0.2); transform: translateY(-1px); }
 
+      /* ── Save button ── */
       #mainBtn {
         width: 100%;
-        padding: 10px;
-        background: #10b981;
+        padding: 11px;
+        background: linear-gradient(135deg, var(--amber), var(--amber-dark));
         color: white;
         border: none;
-        border-radius: 8px;
-        font-size: 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-family: 'Fraunces', serif;
         font-weight: 600;
         cursor: pointer;
-        transition: background 0.15s;
+        transition: all 0.2s;
+        box-shadow: 0 3px 10px rgba(232, 168, 56, 0.4);
+        letter-spacing: 0.01em;
+        margin-top: 2px;
       }
 
       #mainBtn:hover:not(:disabled) {
-        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 16px rgba(232, 168, 56, 0.5);
       }
+
+      #mainBtn:active:not(:disabled) { transform: translateY(0); }
 
       #mainBtn:disabled {
-        background: #d1d5db;
+        background: linear-gradient(135deg, #d4c4a8, #bfaf95);
+        box-shadow: none;
         cursor: not-allowed;
+        opacity: 0.7;
       }
 
-      #status {
-        margin-top: 10px;
+      /* ── Preview box ── */
+      .preview-box {
+        background: var(--cream);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        min-height: 58px;
+        max-height: 100px;
+        overflow-y: auto;
         font-size: 12px;
-        text-align: center;
-        min-height: 18px;
-        color: #6b7280;
+        line-height: 1.6;
+        color: var(--ink);
+        margin-bottom: 10px;
+        word-break: break-word;
+        position: relative;
+        font-style: italic;
       }
 
-      #status.success {
-        color: #10b981;
+      .preview-box.empty {
+        color: var(--ink-faint);
+        font-style: italic;
       }
 
-      #status.error {
-        color: #ef4444;
+      .preview-box:not(.empty)::before {
+        content: '"';
+        font-family: 'Fraunces', serif;
+        font-size: 32px;
+        color: var(--amber);
+        line-height: 1;
+        position: absolute;
+        top: 2px;
+        left: 8px;
+        opacity: 0.5;
       }
 
+      .preview-box:not(.empty) {
+        padding-left: 20px;
+      }
+
+      /* ── Divider ── */
       .divider {
-        border: none;
-        border-top: 1px solid #e5e7eb;
-        margin: 12px 0;
+        height: 1px;
+        background: var(--border);
+        margin: 10px 0;
       }
+
+      /* ── Status ── */
+      #status {
+        font-size: 11px;
+        text-align: center;
+        min-height: 16px;
+        margin-top: 8px;
+        color: var(--ink-light);
+        transition: color 0.2s;
+      }
+      #status.success { color: var(--sage); }
+      #status.error   { color: var(--rose); }
+
+      /* ── Field spacing ── */
+      .field { margin-bottom: 10px; }
+      .field:last-child { margin-bottom: 0; }
+
+      /* ── Scrollbar ── */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: var(--ink-faint); border-radius: 4px; }
+
+      /* ── Fade in ── */
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      .card { animation: fadeUp 0.25s ease; }
     </style>
   </head>
   <body>
+
     <header>
-      <span class="emoji">📝</span>
-      <h1>Highlight to Doc</h1>
+      <div class="logo">✍️</div>
+      <div class="header-text">
+        <h1>Highlight to Doc</h1>
+        <p>Capture anything, anywhere</p>
+      </div>
     </header>
 
-    <!-- Google Doc ID Config -->
-    <div class="doc-section">
-      <label for="docIdInput">Google Doc ID</label>
-      <div class="doc-row">
-        <input
-          type="text"
-          id="docIdInput"
-          placeholder="Paste your Doc ID here…"
-        />
-        <button id="saveDocBtn">Save</button>
+    <div class="card">
+
+      <!-- Doc ID -->
+      <div class="field">
+        <div class="field-label">Google Doc ID</div>
+        <div class="row">
+          <input type="text" id="docIdInput" placeholder="Paste your Doc ID…" />
+          <button class="btn btn-primary" id="saveDocBtn">Save</button>
+        </div>
       </div>
+
+      <div class="divider"></div>
+
+      <!-- Tab selector -->
+      <div class="field">
+        <div class="field-label">Destination Tab</div>
+        <div class="row">
+          <select id="tabSelect">
+            <option value="">— Save a Doc ID first —</option>
+          </select>
+          <button class="btn btn-ghost" id="refreshTabsBtn" title="Refresh tabs">↻</button>
+        </div>
+      </div>
+
+      <!-- New tab -->
+      <div class="field">
+        <div class="field-label">New Tab</div>
+        <div class="row">
+          <input type="text" id="newTabInput" placeholder="e.g. Lab 1, Lecture 3…" />
+          <button class="btn btn-add" id="createTabBtn">+ Add</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Preview -->
+      <div class="field-label">Selected Text</div>
+      <div id="preview" class="preview-box empty">
+        Highlight something on the page first…
+      </div>
+
+      <button id="mainBtn" disabled>Save to Doc ✦</button>
+      <div id="status"></div>
+
     </div>
-
-    <hr class="divider" />
-
-    <!-- Highlighted text preview -->
-    <label>Selected Text</label>
-    <div id="preview" class="preview-box empty">
-      Highlight text on the page, then open this popup…
-    </div>
-
-    <button id="mainBtn" disabled>Save to Google Doc</button>
-    <div id="status"></div>
 
     <script src="popup.js"></script>
   </body>
